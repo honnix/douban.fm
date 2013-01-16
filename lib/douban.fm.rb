@@ -1,5 +1,2 @@
-require "douban.fm/version"
-
-module Douban.fm
-  # Your code goes here...
-end
+require 'douban.fm/version'
+require 'douban.fm/douban_fm'

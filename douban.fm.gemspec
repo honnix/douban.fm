@@ -5,9 +5,9 @@ require 'douban.fm/version'
 
 Gem::Specification.new do |gem|
   gem.name          = "douban.fm"
-  gem.version       = Douban.fm::VERSION
-  gem.authors       = ["ehonlia"]
-  gem.email         = ["hongxin.liang@ericsson.com"]
+  gem.version       = DoubanFM::VERSION
+  gem.authors       = ["honnix"]
+  gem.email         = ["hxliang1982@gmail.com"]
   gem.description   = %q{TODO: Write a gem description}
   gem.summary       = %q{TODO: Write a gem summary}
   gem.homepage      = ""
