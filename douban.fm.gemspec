@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'douban.fm/version'
@@ -8,9 +7,9 @@ Gem::Specification.new do |gem|
   gem.version       = DoubanFM::VERSION
   gem.authors       = ["honnix"]
   gem.email         = ["hxliang1982@gmail.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
-  gem.homepage      = ""
+  gem.description   = %q{douban.fm}
+  gem.summary       = %q{douban.fm}
+  gem.homepage      = "https://github.com/honnix/douban.fm"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

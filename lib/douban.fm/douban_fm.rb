@@ -3,9 +3,13 @@ module DoubanFM
   require 'json'
 
   class DoubanFM
+    attr_reader :waiting
+
     def initialize(email, password)
       @email = email
       @password = password
+      @semaphore = Mutex.new
+      @waiting = false # read this to determin whether to get one more playlist
     end
 
     def login
@@ -51,22 +55,40 @@ module DoubanFM
     end
 
     def play_current_playlist
-      
+      @continue = true
+
+      Thread.new do
+        @waiting = false
+
+        @current_playlist['song'].each do |song|
+          @semaphore.lock
+
+          unless @continue
+            @semaphore.unlock
+            break
+          end
+
+          @player_pid = spawn("mpg123 #{song['url']}")
+
+          @semaphore.unlock
+
+          Process.wait
+        end
+
+        @waiting = @continue
+        yield @waiting if block_given?
+      end
+    end
+
+    def stop
+      @semaphore.synchronize do
+        @continue = false
+
+        begin
+          Process.kill(9, @player_pid)
+        rescue Errno::ESRCH
+        end
+      end
     end
   end  
-end
-
-if __FILE__ == $PROGRAM_NAME
-  unless ARGV.length == 2
-    p "douban_fm.rb <email> <password>"
-    exit
-  end
-
-  email = ARGV[0]
-  password = ARGV[1]
-  douban_fm = DoubanFM::DoubanFM.new(email, password)
-  douban_fm.login
-  douban_fm.get_channels
-  douban_fm.select_channel(0)
-  douban_fm.get_next_playlist
 end

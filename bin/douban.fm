@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+
+require 'douban.fm'
+
+unless ARGV.length == 2
+  p "douban_fm.rb <email> <password>"
+  exit
+end
+
+email = ARGV[0]
+password = ARGV[1]
+douban_fm = DoubanFM::DoubanFM.new(email, password)
+douban_fm.login
+douban_fm.get_channels
+douban_fm.select_channel(0)
+
+# stop = false
+# go_on = true
+# while not stop
+#   if go_on
+#     p "================="
+#     go_on = false
+#     douban_fm.get_next_playlist
+#     douban_fm.play_current_playlist do |waiting|
+#       unless waiting
+#         stop = true
+#         break
+#       else
+#         go_on = true
+#       end
+#     end
+#   else
+#     sleep 10
+#   end
+# end
+
+play_proc = proc do |waiting|
+  if waiting
+    douban_fm.get_next_playlist
+    douban_fm.play_current_playlist do |waiting|
+      play_proc.call(waiting)
+    end
+  end
+end
+
+play_proc.call(true)
+
+sleep

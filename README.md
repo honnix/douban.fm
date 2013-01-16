@@ -1,6 +1,8 @@
 # Douban.fm
 
-TODO: Write a gem description
+Play music from douban.fm.
+
+__Note that this project is still on-going, so I won't promise anything.__
 
 ## Installation
 
@@ -18,7 +20,9 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+* to play your private playlist
+
+    `douban.fm <email> <password>`
 
 ## Contributing
 
