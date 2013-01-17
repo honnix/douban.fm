@@ -54,6 +54,8 @@ Basically there are two ways to play music
 
     It is fantastic to use MPD since there are quite many [clients](http://mpd.wikia.com/wiki/Clients) to use. I am now just use my iPhone with [MPoD2](http://mpd.wikia.com/wiki/Client:MPoD2).
 
+    Thanks for @tdsparrow pointing out MPD, otherwise I might have been doing some really stupid things.
+
     * `douban.fm -m` will play anonymous playlist of channel 0
     * `douban.fm -m -c 1` will play channel 1
     * `douban.fm -m -u xxx@xxx.com -p xxx` will play private playlist
