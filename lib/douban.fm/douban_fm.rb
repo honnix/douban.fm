@@ -52,6 +52,10 @@ module DoubanFM
       res = Net::HTTP.get_response(uri)
 
       @current_playlist = JSON.parse(res.body)
+
+      unless @current_playlist['err'].nil?
+        raise @current_playlist
+      end
     end
 
     def play_current_playlist

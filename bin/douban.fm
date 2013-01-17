@@ -36,7 +36,12 @@ douban_fm.select_channel(0)
 
 play_proc = proc do |waiting|
   if waiting
-    douban_fm.get_next_playlist
+    begin
+      douban_fm.get_next_playlist
+    rescue
+      douban_fm.login
+    end
+    
     douban_fm.play_current_playlist do |waiting|
       play_proc.call(waiting)
     end
