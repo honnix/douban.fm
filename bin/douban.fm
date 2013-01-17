@@ -4,13 +4,9 @@ require 'douban.fm'
 require 'optparse'
 require 'ostruct'
 
-DOUBAN_FM = 'douban.fm'
-MIN_SONGS = 10
-
 def main
   options = OpenStruct.new
-
-  args = ARGV.length
+  options.verbose = false
 
   opts = OptionParser.new do |opts|
     opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [OPTIONS]"
@@ -41,6 +37,10 @@ def main
       options.list = true
     end
 
+    opts.on('-v', '--verbose', 'verbose mode') do
+      options.verbose = true
+    end
+
     opts.on_tail('-h', '--help', 'show this message') do
       puts opts
       exit
@@ -49,14 +49,15 @@ def main
 
   opts.parse!
 
-  if args == 0
-    puts opts
-    exit
+  if options.verbose
+    logger = DoubanFM::ConsoleLogger.new
+  else
+    logger = DoubanFM::DummyLogger.new
   end
 
   if options.list
-    douban_fm = DoubanFM::DoubanFM.new
-    douban_fm.get_channels
+    douban_fm = DoubanFM::DoubanFM.new(logger)
+    douban_fm.fetch_channels
     douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
       channel_id = channel['channel_id']
       puts "#{channel_id}.#{' ' * (4 - channel_id.to_s.length)}#{channel['name']}"
@@ -70,29 +71,45 @@ def main
   end
 
   if options.email.nil?
-    douban_fm = DoubanFM::DoubanFM.new
+    douban_fm = DoubanFM::DoubanFM.new(logger)
+
+    logger.log('play anonymous playlist')
   else
     if options.password.nil? or options.password.empty?
       require 'highline/import'
       options.password = ask("Enter password: ") { |q| q.echo = false }
     end
 
-    douban_fm = DoubanFM::DoubanFM.new(options.email, options.password)
+    douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
     douban_fm.login
+
+    logger.log("login as user [#{options.email}]")
   end
 
   douban_fm.select_channel(options.channel)
+
+  logger.log("select channel #{options.channel}")
 
   if options.mpd.nil?
     play_proc = proc do |waiting|
       if waiting
         begin
-          douban_fm.get_next_playlist
+          logger.log('fetch next playlist')
+
+          douban_fm.fetch_next_playlist
         rescue
+          logger.log('session expired, relogin')
+
           douban_fm.login
-          douban_fm.get_next_playlist
+
+          logger.log('fetch next playlist')
+
+          douban_fm.fetch_next_playlist
         end
-        douban_fm.play_current_playlist do |waiting|
+
+        logger.log('play current playlist')
+
+        douban_fm.play do |waiting|
           play_proc.call(waiting)
         end
       end
@@ -100,41 +117,10 @@ def main
 
     play_proc.call(true)
   else
-    require 'ruby-mpd'
-
-    mpd = MPD.new
-
+    # there are a lot more chances to get stack overflow in this mode,
+    # so can't use the proc way
     while true
-      mpd.connect
-
-      begin
-        songs = mpd.send_command(:listplaylistinfo, DOUBAN_FM)
-        if songs.is_a? String
-          total = 1
-        else
-          total = songs.length
-        end
-      rescue
-        total = 0
-      end
-
-      if total < 10
-        douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM})
-
-        begin
-          douban_fm.get_next_playlist
-        rescue
-          douban_fm.login
-          douban_fm.get_next_playlist
-        end
-
-        douban_fm.current_playlist['song'].each do |song|
-          douban_fm_playlist.add(song['url'].gsub('\\', ''))
-        end
-      end
-
-      mpd.disconnect
-
+      douban_fm.add_to_mpd
       sleep 10
     end
   end
