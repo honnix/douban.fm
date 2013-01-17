@@ -4,7 +4,7 @@ module DoubanFM
   require 'ruby-mpd'
 
   class DoubanFM
-    DOUBAN_FM_MPD_PLAYLIST = 'douban.fm'
+    # DOUBAN_FM_MPD_PLAYLIST = 'douban.fm'
     MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST = 10
 
     attr_reader :waiting, :channels, :current_playlist
@@ -100,21 +100,34 @@ module DoubanFM
       mpd = MPD.new(host, port)
       mpd.connect
 
-      begin
-        songs = mpd.send_command(:listplaylistinfo, DOUBAN_FM_MPD_PLAYLIST)
-        if songs.is_a? String
-          total = 1
-        else
-          total = songs.length
-        end
-      rescue
-        total = 0
-      end
+      # remove after played
+      mpd.consume = 1
+
+      # unfortunately it is not the same as i thought.
+      # i can not create a playlist specially for douban.fm since
+      # mpd will not remove song from this playlist anyway which
+      # means there is no chance for me to detect the total number
+      # of songs in the playlist is below a threshhold.
+      # so before i can find any better solution, just make use
+      # of the default playlist which is dynamic.
+
+      # begin
+      #   songs = mpd.send_command(:listplaylistinfo, DOUBAN_FM_MPD_PLAYLIST)
+      #   if songs.is_a? String
+      #     total = 1
+      #   else
+      #     total = songs.length
+      #   end
+      # rescue
+      #   total = 0
+      # end
+
+      total = mpd.status[:playlistlength]
 
       @logger.log("current total number of songs in mpd #{total}")
 
       if total < MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST
-        douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM_MPD_PLAYLIST})
+        # douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM_MPD_PLAYLIST})
 
         begin
           @logger.log('fetch next playlist')
@@ -135,7 +148,8 @@ module DoubanFM
         @current_playlist['song'].each do |song|
           @logger.log("send [#{song['url'].gsub('\\', '')}] to mpd")
 
-          douban_fm_playlist.add(song['url'].gsub('\\', ''))
+          # douban_fm_playlist.add(song['url'].gsub('\\', ''))
+          mpd.add(song['url'].gsub('\\', ''))
         end
       end
 
