@@ -1,53 +1,145 @@
 #!/usr/bin/env ruby
 
 require 'douban.fm'
+require 'optparse'
+require 'ostruct'
 
-unless ARGV.length == 2
-  p "douban_fm.rb <email> <password>"
-  exit
-end
+DOUBAN_FM = 'douban.fm'
+MIN_SONGS = 10
 
-email = ARGV[0]
-password = ARGV[1]
-douban_fm = DoubanFM::DoubanFM.new(email, password)
-douban_fm.login
-douban_fm.get_channels
-douban_fm.select_channel(0)
+def main
+  options = OpenStruct.new
 
-# stop = false
-# go_on = true
-# while not stop
-#   if go_on
-#     p "================="
-#     go_on = false
-#     douban_fm.get_next_playlist
-#     douban_fm.play_current_playlist do |waiting|
-#       unless waiting
-#         stop = true
-#         break
-#       else
-#         go_on = true
-#       end
-#     end
-#   else
-#     sleep 10
-#   end
-# end
+  args = ARGV.length
 
-play_proc = proc do |waiting|
-  if waiting
-    begin
-      douban_fm.get_next_playlist
-    rescue
-      douban_fm.login
+  opts = OptionParser.new do |opts|
+    opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [OPTIONS]"
+
+    opts.on('-u', '--user email',
+            'douban.fm account name, normally an email address',
+            'if not provided, will play anonymous playlist') do |email|
+      options.email = email
     end
-    
-    douban_fm.play_current_playlist do |waiting|
-      play_proc.call(waiting)
+
+    opts.on('-p', '--password [password]',
+            'douban.fm account password',
+            'if not provided, will be asked') do |password|
+      options.password = password
+    end
+
+    opts.on('-m', '--mpd', 'do not play by it own, send playlist to Music Player Daemon') do
+      options.mpd = true
+    end
+
+    opts.on('-c', '--channel channel',
+            'which channel to play',
+            'if not provided, channel 0 will be selected but who knows what it is') do |channel|
+      options.channel = channel
+    end
+
+    opts.on('-l', '--list', 'list all available channels') do
+      options.list = true
+    end
+
+    opts.on_tail('-h', '--help', 'show this message') do
+      puts opts
+      exit
+    end
+  end
+
+  opts.parse!
+
+  if args == 0
+    puts opts
+    exit
+  end
+
+  if options.list
+    douban_fm = DoubanFM::DoubanFM.new
+    douban_fm.get_channels
+    douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
+      channel_id = channel['channel_id']
+      puts "#{channel_id}.#{' ' * (4 - channel_id.to_s.length)}#{channel['name']}"
+    end
+
+    exit
+  end
+
+  if options.channel.nil?
+    options.channel = 0
+  end
+
+  if options.email.nil?
+    douban_fm = DoubanFM::DoubanFM.new
+  else
+    if options.password.nil? or options.password.empty?
+      require 'highline/import'
+      options.password = ask("Enter password: ") { |q| q.echo = false }
+    end
+
+    douban_fm = DoubanFM::DoubanFM.new(options.email, options.password)
+    douban_fm.login
+  end
+
+  douban_fm.select_channel(options.channel)
+
+  if options.mpd.nil?
+    play_proc = proc do |waiting|
+      if waiting
+        begin
+          douban_fm.get_next_playlist
+        rescue
+          douban_fm.login
+          douban_fm.get_next_playlist
+        end
+        douban_fm.play_current_playlist do |waiting|
+          play_proc.call(waiting)
+        end
+      end
+    end
+
+    play_proc.call(true)
+  else
+    require 'ruby-mpd'
+
+    mpd = MPD.new
+
+    while true
+      mpd.connect
+
+      begin
+        songs = mpd.send_command(:listplaylistinfo, DOUBAN_FM)
+        if songs.is_a? String
+          total = 1
+        else
+          total = songs.length
+        end
+      rescue
+        total = 0
+      end
+
+      if total < 10
+        douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM})
+
+        begin
+          douban_fm.get_next_playlist
+        rescue
+          douban_fm.login
+          douban_fm.get_next_playlist
+        end
+
+        douban_fm.current_playlist['song'].each do |song|
+          douban_fm_playlist.add(song['url'].gsub('\\', ''))
+        end
+      end
+
+      mpd.disconnect
+
+      sleep 10
     end
   end
 end
 
-play_proc.call(true)
+main
 
 sleep

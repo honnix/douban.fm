@@ -3,13 +3,14 @@ module DoubanFM
   require 'json'
 
   class DoubanFM
-    attr_reader :waiting
+    attr_reader :waiting, :channels, :current_playlist
 
-    def initialize(email, password)
+    def initialize(email = '', password = '')
       @email = email
       @password = password
       @semaphore = Mutex.new
       @waiting = false # read this to determin whether to get one more playlist
+      @user_info = {'user_id' => '', 'expire' => '', 'token' => ''}
     end
 
     def login
@@ -27,7 +28,7 @@ module DoubanFM
 
     def get_channels
       uri = URI('http://www.douban.com/j/app/radio/channels')
-      res = Net::HTTP.get(URI('http://www.douban.com/j/app/radio/channels'))
+      res = Net::HTTP.get(uri)
       @channels = JSON.parse(res)
     end
 
