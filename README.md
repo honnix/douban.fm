@@ -38,7 +38,7 @@ Usage: douban.fm [OPTIONS]
 
 Basically there are two ways to play music
 
-1. to play direclty by `mpg123`
+* to play direclty by `mpg123`
 
     Under this mode, music will be played by forking `mpg123` directly. Sorry currently there is no way to configure which music player to use.
 
@@ -48,7 +48,7 @@ Basically there are two ways to play music
     * `douban.fm -u xxx@xxx.com -p xxx -c 1` will play channel 1 but with your account signed in
     * `douban.fm -u xxx@xx.com -p` will play private playlist but will ask for your password to sign in
 
-2. to play by [Music Player Daemon](http://mpd.wikia.com/wiki/Music_Player_Daemon_Wiki)
+* to play by [Music Player Daemon](http://mpd.wikia.com/wiki/Music_Player_Daemon_Wiki)
 
     Under this mode, URL of music will be sent to MPD which will actually play. Whenever there are less than _10_ songs in MPD playlist, more will be retrieved from douban.fm.
 
