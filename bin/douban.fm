@@ -4,128 +4,213 @@ require 'douban.fm'
 require 'optparse'
 require 'ostruct'
 
-def main
-  options = OpenStruct.new
-  options.verbose = false
+class DoubanFMCLI
+  def parse
+    options = OpenStruct.new
+    options.verbose = false
 
-  opts = OptionParser.new do |opts|
-    opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [OPTIONS]"
+    opts = OptionParser.new do |opts|
+      opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [OPTIONS]"
 
-    opts.on('-u', '--user email',
-            'douban.fm account name, normally an email address',
-            'if not provided, will play anonymous playlist') do |email|
-      options.email = email
-    end
+      opts.on('-u', '--user email',
+              'douban.fm account name, normally an email address',
+              'if not provided, will play anonymous playlist') do |email|
+        options.email = email
+      end
 
-    opts.on('-p', '--password [password]',
-            'douban.fm account password',
-            'if not provided, will be asked') do |password|
-      options.password = password
-    end
+      opts.on('-p', '--password [password]',
+              'douban.fm account password',
+              'if not provided, will be asked') do |password|
+        options.password = password
+      end
 
-    opts.on('-m', '--mpd', 'do not play by it own, send playlist to Music Player Daemon') do
-      options.mpd = true
-    end
+      opts.on('-m', '--mpd', 'do not play by it own, send playlist to Music Player Daemon') do
+        options.mpd = true
+      end
 
-    opts.on('-c', '--channel channel',
-            'which channel to play',
-            'if not provided, channel 0 will be selected but who knows what it is') do |channel|
-      options.channel = channel
-    end
-
-    opts.on('-l', '--list', 'list all available channels') do
-      options.list = true
-    end
-
-    opts.on('-v', '--verbose', 'verbose mode') do
-      options.verbose = true
-    end
-
-    opts.on_tail('-h', '--help', 'show this message') do
-      puts opts
-      exit
-    end
-  end
-
-  opts.parse!
-
-  if options.verbose
-    logger = DoubanFM::ConsoleLogger.new
-  else
-    logger = DoubanFM::DummyLogger.new
-  end
-
-  if options.list
-    douban_fm = DoubanFM::DoubanFM.new(logger)
-    douban_fm.fetch_channels
-    douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
-      channel_id = channel['channel_id']
-      puts "#{channel_id}.#{' ' * (4 - channel_id.to_s.length)}#{channel['name']}"
-    end
-
-    exit
-  end
-
-  if options.channel.nil?
-    options.channel = 0
-  end
-
-  if options.email.nil?
-    douban_fm = DoubanFM::DoubanFM.new(logger)
-
-    logger.log('play anonymous playlist')
-  else
-    if options.password.nil? or options.password.empty?
-      require 'highline/import'
-      options.password = ask("Enter password: ") { |q| q.echo = false }
-    end
-
-    douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
-    douban_fm.login
-
-    logger.log("login as user [#{options.email}]")
-  end
-
-  douban_fm.select_channel(options.channel)
-
-  logger.log("select channel #{options.channel}")
-
-  if options.mpd.nil?
-    play_proc = proc do |waiting|
-      if waiting
-        begin
-          logger.log('fetch next playlist')
-
-          douban_fm.fetch_next_playlist
-        rescue
-          logger.log('session expired, relogin')
-
-          douban_fm.login
-
-          logger.log('fetch next playlist')
-
-          douban_fm.fetch_next_playlist
+      opts.on('-r', '--remote remote', 'mpd remote host, in format of <IP>:<Port>') do |remote|
+        parts = remote.split(':')
+        if parts.length != 2
+          puts opts
+          exit
         end
 
-        logger.log('play current playlist')
+        options.remote_host = parts[0]
+        options.remote_port = parts[1].to_i
+      end
 
-        douban_fm.play do |waiting|
-          play_proc.call(waiting)
-        end
+      opts.on('-c', '--channel channel',
+              'which channel to play',
+              'if not provided, channel 0 will be selected but who knows what it is') do |channel|
+        options.channel = channel
+      end
+
+      opts.on('-l', '--list', 'list all available channels') do
+        options.list = true
+      end
+
+      opts.on('-i', '--interaction', 'start an http server for interaction') do
+        options.interaction = true
+      end
+
+      opts.on('-v', '--verbose', 'verbose mode') do
+        options.verbose = true
+      end
+
+      opts.on_tail('-h', '--help', 'show this message') do
+        puts opts
+        exit
       end
     end
 
-    play_proc.call(true)
-  else
-    # there are a lot more chances to get stack overflow in this mode,
-    # so can't use the proc way
-    while true
-      douban_fm.add_to_mpd
-      sleep 10
+    opts.parse!
+
+    options
+  end
+
+  def main
+    options = parse
+
+    if not options.interaction.nil? and options.mpd.nil?
+      puts 'only mpd mode supports interaction'
+      exit
+    end
+
+    if options.verbose
+      logger = DoubanFM::ConsoleLogger.new
+    else
+      logger = DoubanFM::DummyLogger.new
+    end
+
+    if options.list
+      @@douban_fm = DoubanFM::DoubanFM.new(logger)
+      @@douban_fm.fetch_channels
+      @@douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
+        channel_id = channel['channel_id']
+        puts "#{channel_id}.#{' ' * (4 - channel_id.to_s.length)}#{channel['name']}"
+      end
+
+      exit
+    end
+
+    if options.channel.nil?
+      options.channel = 0
+    end
+
+    if options.email.nil?
+      @@douban_fm = DoubanFM::DoubanFM.new(logger)
+
+      logger.log('play anonymous playlist')
+    else
+      if options.password.nil? or options.password.empty?
+        require 'highline/import'
+        options.password = ask("Enter password: ") { |q| q.echo = false }
+      end
+
+      @@douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
+      @@douban_fm.login
+
+      logger.log("login as user [#{options.email}]")
+    end
+
+    @@douban_fm.select_channel(options.channel)
+
+    logger.log("select channel #{options.channel}")
+
+    if options.mpd.nil?
+      play_proc = proc do |waiting|
+        if waiting
+          begin
+            logger.log('fetch next playlist')
+
+            @@douban_fm.fetch_next_playlist
+          rescue
+            logger.log('session expired, relogin')
+
+            @@douban_fm.login
+
+            logger.log('fetch next playlist')
+
+            @@douban_fm.fetch_next_playlist
+          end
+
+          logger.log('play current playlist')
+
+          @@douban_fm.play do |waiting|
+            play_proc.call(waiting)
+          end
+        end
+      end
+
+      play_proc.call(true)
+    else
+      unless options.interaction.nil?
+        require 'webrick'
+        require 'webrick/httpstatus'
+        require 'json'
+
+        servletClass = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
+          class << self
+            def remote_host=(host)
+              @@remote_host = host
+            end
+
+            def remote_port=(port)
+              @@remote_port = port
+            end
+          end
+          @@remote_host = nil
+          @@remote_port = nil
+
+          def do_GET request, response
+            path = request.path[1..-1].split('/')
+            case path[0]
+            when 'channels'
+              @@douban_fm.fetch_channels
+              response.body = JSON.generate(@@douban_fm.channels)
+              raise WEBrick::HTTPStatus::OK
+            when 'channel'
+              unless path[1].nil?
+                # there is a race but not a big deal
+                @@douban_fm.select_channel(path[1].to_i)
+                @@douban_fm.clear_mpd_playlist(@@remote_host, @@remote_port)
+                raise WEBrick::HTTPStatus::OK
+              else
+                raise WEBrick::HTTPStatus::NotFound
+              end
+            else
+              raise WEBrick::HTTPStatus::NotFound
+            end
+          end
+        end
+
+        servletClass.remote_host = options.remote_host
+        servletClass.remote_port = options.remote_port
+
+        Thread.new do
+          server = WEBrick::HTTPServer.new(:Port => 3000)
+
+          %w[INT TERM].each do |signal|
+            trap(signal) do
+              server.shutdown
+              Thread.main.kill # die hard
+            end
+          end
+
+          server.mount("/", servletClass)
+          server.start
+        end
+      end
+
+      # there are a lot more chances to get stack overflow in this mode,
+      # so can't use the proc way
+      while true
+        @@douban_fm.add_to_mpd(options.remote_host, options.remote_port)
+        sleep 10
+      end
     end
   end
 end
 
-main
-
+DoubanFMCLI.new.main
 sleep

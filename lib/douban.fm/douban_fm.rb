@@ -97,7 +97,17 @@ module DoubanFM
     end
 
     def add_to_mpd(host = 'localhost', port = 6600)
+      if host.nil?
+        host = 'localhost'
+      end
+      if port.nil?
+        port = 6600
+      end
+
       mpd = MPD.new(host, port)
+
+      @logger.log("connecting to mpd at #{host}:#{port}")
+
       mpd.connect
 
       # remove after played
@@ -143,14 +153,36 @@ module DoubanFM
           fetch_next_playlist
         end
 
-        @logger.log("add more songs to mpd")
+        add_current_playlist_to_mpd(mpd)
+      end
 
-        @current_playlist['song'].each do |song|
-          @logger.log("send [#{song['url'].gsub('\\', '')}] to mpd")
+      mpd.disconnect
+    end
 
-          # douban_fm_playlist.add(song['url'].gsub('\\', ''))
-          mpd.add(song['url'].gsub('\\', ''))
-        end
+    def clear_mpd_playlist(host = 'localhost', port = 6600)
+      if host.nil?
+        host = 'localhost'
+      end
+      if port.nil?
+        port = 6600
+      end
+
+      mpd = MPD.new(host, port)
+
+      @logger.log("connecting to mpd at #{host}:#{port}")
+
+      mpd.connect
+
+      @logger.log('crop or clear current playlist')
+
+      status = mpd.status
+      mpd.clear # this will stop mpd if it is playing
+
+      fetch_next_playlist
+      add_current_playlist_to_mpd(mpd)
+
+      if status[:state] == :play
+        mpd.play
       end
 
       mpd.disconnect
@@ -164,6 +196,31 @@ module DoubanFM
           Process.kill(9, @player_pid) unless @player_pid.nil?
         rescue Errno::ESRCH
         end
+      end
+    end
+
+    private
+
+    def add_current_playlist_to_mpd(mpd)
+      @logger.log("add more songs to mpd")
+
+      @current_playlist['song'].each do |song|
+        @logger.log("send [#{song['url'].gsub('\\', '')}] to mpd")
+
+        mpd.add(song['url'].gsub('\\', ''))
+      end
+    end
+
+    # currently not used
+    def crop(mpd, status)
+      total = status[:playlistlength]
+      current = status[:song]
+
+      total.downto(current + 2) do |i|
+        mpd.delete(i)
+      end
+      current.downto(1) do |i|
+        mpd.delete(i)
       end
     end
   end  
