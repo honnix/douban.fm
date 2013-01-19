@@ -29,10 +29,17 @@ Usage: douban.fm [OPTIONS]
     -p, --password [password]        douban.fm account password
                                      if not provided, will be asked
     -m, --mpd                        do not play by it own, send playlist to Music Player Daemon
+    -r, --remote remote              mpd remote host, in format of <IP>:<Port>
     -c, --channel channel            which channel to play
                                      if not provided, channel 0 will be selected but who knows what it is
     -l, --list                       list all available channels
-    -v, --verbose                    verbose mode
+    -i, --interaction [port]         start an http server for interaction
+                                     if omit port, 3000 will be used by default
+                                     GET /channels to get all available channels
+                                     GET /now to get current playing channel
+                                     GET /channel/<id> to switch to channel of the specified id
+    -V, --verbose                    verbose mode
+    -v, --version                    show current version
     -h, --help                       show this message
 </pre>
 
@@ -61,6 +68,10 @@ Basically there are two ways to play music
     * `douban.fm -m -u xxx@xxx.com -p xxx` will play private playlist
     * `douban.fm -m -u xxx@xxx.com -p xxx -c 1` will play channel 1 but with your account signed in
     * `douban.fm -m -u xxx@xx.com -p` will play private playlist but will ask for your password to sign in
+    * if "-m -i" is provided, a web server will start listening on 3000 by default, and you may
+        * GET /channels to get all available channels
+        * GET /now to get current playing channel
+        * GET /channel/<id> to switch to channel of the specified id
 
 ## Contributing
 

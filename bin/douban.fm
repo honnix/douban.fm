@@ -49,12 +49,23 @@ class DoubanFMCLI
         options.list = true
       end
 
-      opts.on('-i', '--interaction', 'start an http server for interaction') do
+      opts.on('-i', '--interaction [port]',
+              'start an http server for interaction',
+              'if omit port, 3000 will be used by default',
+              'GET /channels to get all available channels',
+              'GET /now to get current playing channel',
+              'GET /channel/<id> to switch to channel of the specified id') do |port|
         options.interaction = true
+        options.port = port
       end
 
-      opts.on('-v', '--verbose', 'verbose mode') do
+      opts.on('-V', '--verbose', 'verbose mode') do
         options.verbose = true
+      end
+
+      opts.on('-v', '--version', 'show current version') do
+        puts DoubanFM::VERSION
+        exit
       end
 
       opts.on_tail('-h', '--help', 'show this message') do
@@ -83,9 +94,9 @@ class DoubanFMCLI
     end
 
     if options.list
-      @@douban_fm = DoubanFM::DoubanFM.new(logger)
-      @@douban_fm.fetch_channels
-      @@douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
+      @douban_fm = DoubanFM::DoubanFM.new(logger)
+      @douban_fm.fetch_channels
+      @douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
         channel_id = channel['channel_id']
         puts "#{channel_id}.#{' ' * (4 - channel_id.to_s.length)}#{channel['name']}"
       end
@@ -98,7 +109,7 @@ class DoubanFMCLI
     end
 
     if options.email.nil?
-      @@douban_fm = DoubanFM::DoubanFM.new(logger)
+      @douban_fm = DoubanFM::DoubanFM.new(logger)
 
       logger.log('play anonymous playlist')
     else
@@ -107,13 +118,13 @@ class DoubanFMCLI
         options.password = ask("Enter password: ") { |q| q.echo = false }
       end
 
-      @@douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
-      @@douban_fm.login
+      @douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
+      @douban_fm.login
 
       logger.log("login as user [#{options.email}]")
     end
 
-    @@douban_fm.select_channel(options.channel)
+    @douban_fm.select_channel(options.channel)
 
     logger.log("select channel #{options.channel}")
 
@@ -123,20 +134,20 @@ class DoubanFMCLI
           begin
             logger.log('fetch next playlist')
 
-            @@douban_fm.fetch_next_playlist
+            @douban_fm.fetch_next_playlist
           rescue
             logger.log('session expired, relogin')
 
-            @@douban_fm.login
+            @douban_fm.login
 
             logger.log('fetch next playlist')
 
-            @@douban_fm.fetch_next_playlist
+            @douban_fm.fetch_next_playlist
           end
 
           logger.log('play current playlist')
 
-          @@douban_fm.play do |waiting|
+          @douban_fm.play do |waiting|
             play_proc.call(waiting)
           end
         end
@@ -158,9 +169,15 @@ class DoubanFMCLI
             def remote_port=(port)
               @@remote_port = port
             end
+
+            def douban_fm=(fm)
+              @@douban_fm = fm
+            end
           end
+
           @@remote_host = nil
           @@remote_port = nil
+          @@douban_fm = nil
 
           def do_GET request, response
             path = request.path[1..-1].split('/')
@@ -178,6 +195,8 @@ class DoubanFMCLI
               else
                 raise WEBrick::HTTPStatus::NotFound
               end
+            when 'now'
+              response.body = JSON.generate({'channel' => @@douban_fm.current_channel})
             else
               raise WEBrick::HTTPStatus::NotFound
             end
@@ -186,9 +205,11 @@ class DoubanFMCLI
 
         servletClass.remote_host = options.remote_host
         servletClass.remote_port = options.remote_port
+        servletClass.douban_fm = @douban_fm
 
         Thread.new do
-          server = WEBrick::HTTPServer.new(:Port => 3000)
+          port = options.port || 3000
+          server = WEBrick::HTTPServer.new(:Port => port)
 
           %w[INT TERM].each do |signal|
             trap(signal) do
@@ -205,7 +226,7 @@ class DoubanFMCLI
       # there are a lot more chances to get stack overflow in this mode,
       # so can't use the proc way
       while true
-        @@douban_fm.add_to_mpd(options.remote_host, options.remote_port)
+        @douban_fm.add_to_mpd(options.remote_host, options.remote_port)
         sleep 10
       end
     end

@@ -7,7 +7,7 @@ module DoubanFM
     # DOUBAN_FM_MPD_PLAYLIST = 'douban.fm'
     MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST = 10
 
-    attr_reader :waiting, :channels, :current_playlist
+    attr_reader :waiting, :channels, :current_channel
 
     def initialize(logger = DummyLogger.new, email = '', password = '')
       @logger = logger
@@ -61,7 +61,7 @@ module DoubanFM
 
       @current_playlist = JSON.parse(res.body)
 
-      @logger.log("raw playlist #{current_playlist}")
+      @logger.log("raw playlist #{@current_playlist}")
 
       unless @current_playlist['err'].nil?
         raise @current_playlist
