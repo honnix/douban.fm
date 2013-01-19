@@ -51,7 +51,10 @@ class DoubanFMCLI
 
       opts.on('-i', '--interaction [port]',
               'start an http server for interaction',
-              'if omit port, 3000 will be used by default') do |port|
+              'if omit port, 3000 will be used by default',
+              'GET /channels to get all available channels',
+              'GET /now to get current playing channel',
+              'GET /channel/<id> to switch to channel of the specified id') do |port|
         options.interaction = true
         options.port = port
       end
