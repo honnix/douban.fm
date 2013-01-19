@@ -53,8 +53,13 @@ class DoubanFMCLI
         options.interaction = true
       end
 
-      opts.on('-v', '--verbose', 'verbose mode') do
+      opts.on('-V', '--verbose', 'verbose mode') do
         options.verbose = true
+      end
+
+      opts.on('-v', '--version', 'show current version') do
+        puts DoubanFM::VERSION
+        exit
       end
 
       opts.on_tail('-h', '--help', 'show this message') do
