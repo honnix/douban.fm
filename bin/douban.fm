@@ -49,8 +49,11 @@ class DoubanFMCLI
         options.list = true
       end
 
-      opts.on('-i', '--interaction', 'start an http server for interaction') do
+      opts.on('-i', '--interaction [port]',
+              'start an http server for interaction',
+              'if omit port, 3000 will be used by default') do |port|
         options.interaction = true
+        options.port = port
       end
 
       opts.on('-V', '--verbose', 'verbose mode') do
@@ -202,7 +205,8 @@ class DoubanFMCLI
         servletClass.douban_fm = @douban_fm
 
         Thread.new do
-          server = WEBrick::HTTPServer.new(:Port => 3000)
+          port = options.port || 3000
+          server = WEBrick::HTTPServer.new(:Port => port)
 
           %w[INT TERM].each do |signal|
             trap(signal) do
