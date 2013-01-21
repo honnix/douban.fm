@@ -28,6 +28,7 @@ Usage: douban.fm [OPTIONS]
                                      if not provided, will play anonymous playlist
     -p, --password [password]        douban.fm account password
                                      if not provided, will be asked
+    -x, --proxy proxy                http proxy, in format of <proxy_addr>:<proxy_port>
     -m, --mpd                        do not play by it own, send playlist to Music Player Daemon
     -r, --remote remote              mpd remote host, in format of <IP>:<Port>
     -c, --channel channel            which channel to play
