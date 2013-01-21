@@ -24,6 +24,17 @@ class DoubanFMCLI
         options.password = password
       end
 
+      opts.on('-x', '--proxy proxy', 'http proxy, in format of <proxy_addr>:<proxy_port>') do |proxy|
+        parts = proxy.split(':')
+        if parts.length != 2
+          puts opts
+          exit
+        end
+
+        options.proxy_addr = parts[0]
+        options.proxy_port = parts[1].to_i
+      end
+
       opts.on('-m', '--mpd', 'do not play by it own, send playlist to Music Player Daemon') do
         options.mpd = true
       end
@@ -94,7 +105,7 @@ class DoubanFMCLI
     end
 
     if options.list
-      @douban_fm = DoubanFM::DoubanFM.new(logger)
+      @douban_fm = DoubanFM::DoubanFM.new(logger, '', '',  options.proxy_addr, options.proxy_port)
       @douban_fm.fetch_channels
       @douban_fm.channels['channels'].sort_by { |i| i['channel_id'] }.each do |channel|
         channel_id = channel['channel_id']
@@ -109,7 +120,7 @@ class DoubanFMCLI
     end
 
     if options.email.nil?
-      @douban_fm = DoubanFM::DoubanFM.new(logger)
+      @douban_fm = DoubanFM::DoubanFM.new(logger, '', '',  options.proxy_addr, options.proxy_port)
 
       logger.log('play anonymous playlist')
     else
@@ -118,7 +129,7 @@ class DoubanFMCLI
         options.password = ask("Enter password: ") { |q| q.echo = false }
       end
 
-      @douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password)
+      @douban_fm = DoubanFM::DoubanFM.new(logger, options.email, options.password, options.proxy_addr, options.proxy_port)
       @douban_fm.login
 
       logger.log("login as user [#{options.email}]")

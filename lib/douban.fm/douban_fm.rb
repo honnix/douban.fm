@@ -9,10 +9,12 @@ module DoubanFM
 
     attr_reader :waiting, :channels, :current_channel
 
-    def initialize(logger = DummyLogger.new, email = '', password = '')
+    def initialize(logger = DummyLogger.new, email = '', password = '', proxy_addr = '', proxy_port = '')
       @logger = logger
       @email = email
       @password = password
+      @proxy_addr = proxy_addr;
+      @proxy_port = proxy_port;
       @semaphore = Mutex.new
       @waiting = false # read this to determin whether to fetch one more playlist
       @user_info = {'user_id' => '', 'expire' => '', 'token' => ''}
@@ -20,7 +22,7 @@ module DoubanFM
 
     def login
       uri = URI('http://www.douban.com/j/app/login')
-      res = Net::HTTP.post_form(uri,
+      res = Net::HTTP::Proxy(@proxy_addr,@proxy_port).post_form(uri,
                                 'email' => @email,
                                 'password' => @password,
                                 'app_name' => 'radio_desktop_mac',
@@ -33,7 +35,7 @@ module DoubanFM
 
     def fetch_channels
       uri = URI('http://www.douban.com/j/app/radio/channels')
-      res = Net::HTTP.get(uri)
+      res = Net::HTTP::Proxy(@proxy_addr,@proxy_port).get(uri)
       @channels = JSON.parse(res)
 
       @logger.log("raw channel list #{channels}")
@@ -57,7 +59,7 @@ module DoubanFM
         :type => 'n'
       }
       uri.query = URI.encode_www_form(params)
-      res = Net::HTTP.get_response(uri)
+      res = Net::HTTP::Proxy(@proxy_addr,@proxy_port).get_response(uri)
 
       @current_playlist = JSON.parse(res.body)
 
