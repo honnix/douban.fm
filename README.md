@@ -71,7 +71,8 @@ Basically there are two ways to play music
     * if "-m -i" is provided, a web server will start listening on 3000 by default, and you may
         * GET /channels to get all available channels
         * GET /now to get current playing channel
-        * GET /channel/<id> to switch to channel of the specified id
+        * GET /channel/<id> to switch to channel of the specified id, if id is -1, channel will be selected randomly
+          each time fetching playlist
 
 ## Contributing
 
