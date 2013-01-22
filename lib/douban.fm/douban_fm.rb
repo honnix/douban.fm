@@ -136,6 +136,8 @@ module DoubanFM
 
       @logger.log("current total number of songs in mpd #{total}")
 
+      added = false
+
       if total < MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST
         # douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM_MPD_PLAYLIST})
 
@@ -154,9 +156,13 @@ module DoubanFM
         end
 
         add_current_playlist_to_mpd(mpd)
+
+        added = true
       end
 
       mpd.disconnect
+
+      added
     end
 
     def clear_mpd_playlist(host = 'localhost', port = 6600)
