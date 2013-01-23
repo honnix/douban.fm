@@ -2,10 +2,13 @@ module DoubanFM
   require 'net/http'
   require 'json'
   require 'ruby-mpd'
+  require 'date'
 
   class DoubanFM
     # DOUBAN_FM_MPD_PLAYLIST = 'douban.fm'
     MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST = 10
+
+    RANDOM_CHANNEL_ID = -1
 
     attr_reader :waiting, :channels, :current_channel
 
@@ -32,9 +35,16 @@ module DoubanFM
     end
 
     def fetch_channels
-      uri = URI('http://www.douban.com/j/app/radio/channels')
-      res = Net::HTTP.get(uri)
-      @channels = JSON.parse(res)
+      today = Date.new
+      if today != @last_fetching_channels_date
+        uri = URI('http://www.douban.com/j/app/radio/channels')
+        res = Net::HTTP.get(uri)
+        @channels = JSON.parse(res)
+
+        @last_fetching_channels_date = today
+      else
+        @logger.log('use channels in cache')
+      end
 
       @logger.log("raw channel list #{channels}")
     end
@@ -44,6 +54,14 @@ module DoubanFM
     end
 
     def fetch_next_playlist
+      if @current_channel == RANDOM_CHANNEL_ID
+        channel_id = select_random_channel
+      else
+        channel_id = @current_channel
+      end
+
+      @logger.log("now fetch next playlist from channel #{channel_id}")
+
       uri = URI('http://www.douban.com/j/app/radio/people')
       params = {
         :app_name => 'radio_desktop_mac',
@@ -53,7 +71,7 @@ module DoubanFM
         :token => @user_info['token'],
         :sid => '',
         :h => '',
-        :channel => @current_channel,
+        :channel => channel_id,
         :type => 'n'
       }
       uri.query = URI.encode_www_form(params)
@@ -136,6 +154,8 @@ module DoubanFM
 
       @logger.log("current total number of songs in mpd #{total}")
 
+      added = false
+
       if total < MIN_SONGS_IN_DOUBAN_FM_MPD_PLAYLIST
         # douban_fm_playlist = MPD::Playlist.new(mpd, {:playlist => DOUBAN_FM_MPD_PLAYLIST})
 
@@ -154,9 +174,13 @@ module DoubanFM
         end
 
         add_current_playlist_to_mpd(mpd)
+
+        added = true
       end
 
       mpd.disconnect
+
+      added
     end
 
     def clear_mpd_playlist(host = 'localhost', port = 6600)
@@ -222,6 +246,14 @@ module DoubanFM
       current.downto(1) do |i|
         mpd.delete(i)
       end
+    end
+
+    def select_random_channel
+      fetch_channels
+
+      channels = @channels['channels']
+      which = Random.new.rand(0 ... channels.size)
+      channels[which]['channel_id']
     end
   end  
 end

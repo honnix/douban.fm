@@ -225,8 +225,22 @@ class DoubanFMCLI
 
       # there are a lot more chances to get stack overflow in this mode,
       # so can't use the proc way
+      count = 0
       while true
-        @douban_fm.add_to_mpd(options.remote_host, options.remote_port)
+        if not @douban_fm.add_to_mpd(options.remote_host, options.remote_port)
+          count += 1
+
+          logger.log("playlist not updated, wait for 10 seconds, total waiting time #{count * 10} seconds")
+
+          if count == 360
+            logger.log('playlist has been updated for around one hour, go clear it')
+
+            @douban_fmn.clear_mpd_playlist(options.remote_host, options.remote_port)
+            count = 0
+          end
+        else
+          count = 0
+        end
         sleep 10
       end
     end
