@@ -197,6 +197,9 @@ class DoubanFMCLI
               end
             when 'now'
               response.body = JSON.generate({'channel' => @@douban_fm.current_channel})
+            when 'index'
+              html_path = File.expand_path('../../index.html', __FILE__)
+              response.body = File.readlines(html_path).join('')
             else
               raise WEBrick::HTTPStatus::NotFound
             end
