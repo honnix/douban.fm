@@ -181,8 +181,6 @@ class DoubanFMCLI
 
           def do_GET request, response
             path = request.path[1..-1].split('/')
-            puts "======" + path[0].to_s
-            puts "lkj" if path[0].nil?
             case path[0]
             when 'channels'
               @@douban_fm.fetch_channels
