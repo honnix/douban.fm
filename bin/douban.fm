@@ -212,7 +212,7 @@ class DoubanFMCLI
 
         Thread.new do
           port = options.port || 3000
-          server = WEBrick::HTTPServer.new(:Port => port)
+          server = WEBrick::HTTPServer.new(:Port => port, :DoNotReverseLookup => true)
 
           %w[INT TERM].each do |signal|
             trap(signal) do
