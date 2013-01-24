@@ -74,7 +74,7 @@
     <![endif]-->
 
     <!-- Fav and touch icons, you might need specify the following images -->
-    <!-- 
+    <!--
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
@@ -123,20 +123,23 @@
         // load current play channel
         $.getJSON("/now", function(data) {
           var now_id = data['channel'];
+          var now_name;
+          if (now_id === -1)
+            now_name = "乱放"
 
           // load all the channels
           $.getJSON('/channels', function(data) {
             var items = [];
             data = data['channels']
-            
-            var now_name = '';
+
             $.each(data, function(index, val) {
-              if(val['channel_id'] == now_id) 
+              if(val['channel_id'] == now_id)
                 now_name = val['name'];
-              
+
               items.push('<div class="music"><a class="btn channel" href="#" id="channel_'+val['channel_id']+'"><i class="icon-music"></i> '+val['name']+'</a></div>');
             });
-           
+            items.push('<div class="music"><a class="btn channel" href="#" id="channel_-1"><i class="icon-music"></i>乱放</a></div>');
+
             $('div.channels').html(items.join(''));
             $('a#now').button('reset');
             $('a#now').html($('a#now').html()+now_name);
