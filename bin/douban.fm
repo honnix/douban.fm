@@ -235,7 +235,7 @@ class DoubanFMCLI
           if count == 360
             logger.log('playlist has been updated for around one hour, go clear it')
 
-            @douban_fmn.clear_mpd_playlist(options.remote_host, options.remote_port)
+            @douban_fm.clear_mpd_playlist(options.remote_host, options.remote_port)
             count = 0
           end
         else
