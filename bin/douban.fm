@@ -197,6 +197,9 @@ class DoubanFMCLI
               end
             when 'now'
               response.body = JSON.generate({'channel' => @@douban_fm.current_channel})
+            when 'index', nil
+              html_path = File.expand_path('../../index.html', __FILE__)
+              response.body = File.readlines(html_path).join('')
             else
               raise WEBrick::HTTPStatus::NotFound
             end
@@ -209,7 +212,7 @@ class DoubanFMCLI
 
         Thread.new do
           port = options.port || 3000
-          server = WEBrick::HTTPServer.new(:Port => port)
+          server = WEBrick::HTTPServer.new(:Port => port, :DoNotReverseLookup => true)
 
           %w[INT TERM].each do |signal|
             trap(signal) do

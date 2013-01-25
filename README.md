@@ -73,6 +73,7 @@ Basically there are two ways to play music
         * GET /now to get current playing channel
         * GET /channel/<id> to switch to channel of the specified id, if id is -1, channel will be selected randomly
           each time fetching playlist
+        * GET / or /index to view channel switch pannel
 
 ## Contributing
 
