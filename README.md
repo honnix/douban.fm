@@ -32,6 +32,9 @@ Usage: douban.fm [OPTIONS]
     -r, --remote remote              mpd remote host, in format of <IP>:<Port>
     -c, --channel channel            which channel to play
                                      if not provided, channel 0 will be selected but who knows what it is
+    -k, --kbps kbps                  set kbps
+                                     if not provided, 64kbps will be used as default
+                                     for non-pro user this option simply does not work
     -l, --list                       list all available channels
     -i, --interaction [port]         start an http server for interaction
                                      if omit port, 3000 will be used by default
@@ -70,9 +73,11 @@ Basically there are two ways to play music
     * `douban.fm -m -u xxx@xx.com -p` will play private playlist but will ask for your password to sign in
     * if "-m -i" is provided, a web server will start listening on 3000 by default, and you may
         * GET /channels to get all available channels
-        * GET /now to get current playing channel
+        * GET /channel to get current playing channel
         * GET /channel/<id> to switch to channel of the specified id, if id is -1, channel will be selected randomly
           each time fetching playlist
+        * GET /kbps to get current kbps
+        * GET /kbps/<kbps> to set kbps, for non-pro user this option simply does not work
         * GET / or /index to view channel switch pannel
 
 ## Contributing

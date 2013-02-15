@@ -10,7 +10,7 @@ module DoubanFM
 
     RANDOM_CHANNEL_ID = -1
 
-    attr_reader :waiting, :channels, :current_channel
+    attr_reader :waiting, :channels, :current_channel, :kbps
 
     def initialize(logger = DummyLogger.new, email = '', password = '')
       @logger = logger
@@ -53,6 +53,10 @@ module DoubanFM
       @current_channel = channel_num
     end
 
+    def set_kbps(kbps)
+      @kbps = kbps
+    end
+
     def fetch_next_playlist
       if @current_channel == RANDOM_CHANNEL_ID
         channel_id = select_random_channel
@@ -72,8 +76,10 @@ module DoubanFM
         :sid => '',
         :h => '',
         :channel => channel_id,
-        :type => 'n'
+        :type => 'n',
+        :kbps => @kbps
       }
+      @logger.log(params)
       uri.query = URI.encode_www_form(params)
       res = Net::HTTP.get_response(uri)
 

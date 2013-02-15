@@ -98,7 +98,12 @@
             <a id="now" class="btn btn-large btn-success" data-loading-text="loading ..." data-complete-text="" href=""><i class="icon-play"></i><i class="icon-music"></i> </a>
             <hr>
             <div class="channels">
-
+            </div>
+            <hr>
+            <div class="kbps-list">
+              <div class="music"><a class="btn kbps" href="#" id="kbps_192"><i class="icon-headphones"></i>192kbps</a></div>
+              <div class="music"><a class="btn kbps" href="#" id="kbps_128"><i class="icon-headphones"></i>128kbps</a></div>
+              <div class="music"><a class="btn kbps" href="#" id="kbps_64"><i class="icon-headphones"></i>64kbps</a></div>
             </div>
         </div>
       </div>
@@ -121,11 +126,13 @@
       $(function(){
         $('a#now').button('loading');
         // load current play channel
-        $.getJSON("/now", function(data) {
+        $.getJSON('/channel', function(data) {
           var now_id = data['channel'];
           var now_name;
           if (now_id === -1)
-            now_name = "乱放"
+            now_name = '乱放'
+          else if (now_id === -3)
+            now_name = '红心'
 
           // load all the channels
           $.getJSON('/channels', function(data) {
@@ -136,30 +143,42 @@
               if(val['channel_id'] == now_id)
                 now_name = val['name'];
 
-              items.push('<div class="music"><a class="btn channel" href="#" id="channel_'+val['channel_id']+'"><i class="icon-music"></i> '+val['name']+'</a></div>');
+              items.push('<div class="music"><a class="btn channel" href="#" id="channel_'+val['channel_id']+'"><i class="icon-music"></i>' + val['name'] + '</a></div>');
             });
             items.push('<div class="music"><a class="btn channel" href="#" id="channel_-1"><i class="icon-music"></i>乱放</a></div>');
+            items.push('<div class="music"><a class="btn channel" href="#" id="channel_-3"><i class="icon-heart"></i>红心</a></div>');
 
             $('div.channels').html(items.join(''));
             $('a#now').button('reset');
-            $('a#now').html($('a#now').html()+now_name);
-          }); // end of getJSON
 
+            $.getJSON('/kbps', function(data) {
+              $('a#now').html($('a#now').html() + now_name + '@' + data['kbps'] + 'kbps');
+            });
+          }); // end of getJSON
         });
 
         // bind click event to channel buttons
-        $('body').on('click','a.btn.channel',function(event){
+        $('body').on('click', 'a.btn.channel', function(event){
           $('a#now').button('loading');
           event.preventDefault();
           var channel = $(this).attr('id').substr(8);
           // switch channel
-          $.get("/channel/"+channel, function(data) {
+          $.get('/channel/' + channel, function(data) {
             window.location.href = window.location.href;
           });
         });
 
+        // bind click kbps to kbps buttons
+        $('body').on('click', 'a.btn.kbps', function(event){
+          $('a#now').button('loading');
+          event.preventDefault();
+          var kbps = $(this).attr('id').substr(5);
+          // set kbps
+          $.get('/kbps/'+ kbps, function(data) {
+            window.location.href = window.location.href;
+          });
+        });
       }); // end of document.ready
-
     </script>
   </body>
 </html>
