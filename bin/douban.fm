@@ -42,7 +42,14 @@ class DoubanFMCLI
       opts.on('-c', '--channel channel',
               'which channel to play',
               'if not provided, channel 0 will be selected but who knows what it is') do |channel|
-        options.channel = channel
+        options.channel = channel.to_i
+      end
+
+      opts.on('-k', '--kbps kbps',
+              'set kbps',
+              'if not provided, 64kbps will be used as default',
+              'for non-pro user this option simply does not work') do |kbps|
+        options.kbps = kbps.to_i
       end
 
       opts.on('-l', '--list', 'list all available channels') do
@@ -108,6 +115,10 @@ class DoubanFMCLI
       options.channel = 0
     end
 
+    if options.kbps.nil?
+      options.kbps = 64
+    end
+
     if options.email.nil?
       @douban_fm = DoubanFM::DoubanFM.new(logger)
 
@@ -127,6 +138,10 @@ class DoubanFMCLI
     @douban_fm.select_channel(options.channel)
 
     logger.log("select channel #{options.channel}")
+
+    @douban_fm.set_kbps(options.kbps)
+
+    logger.log("set kbps #{options.kbps}")
 
     if options.mpd.nil?
       play_proc = proc do |waiting|
@@ -193,10 +208,17 @@ class DoubanFMCLI
                 @@douban_fm.clear_mpd_playlist(@@remote_host, @@remote_port)
                 raise WEBrick::HTTPStatus::OK
               else
-                raise WEBrick::HTTPStatus::NotFound
+                response.body = JSON.generate({'channel' => @@douban_fm.current_channel})
               end
-            when 'now'
-              response.body = JSON.generate({'channel' => @@douban_fm.current_channel})
+            when 'kbps'
+              unless path[1].nil?
+                # there is a race but not a big deal
+                @@douban_fm.set_kbps(path[1].to_i)
+                @@douban_fm.clear_mpd_playlist(@@remote_host, @@remote_port)
+                raise WEBrick::HTTPStatus::OK
+              else
+                response.body = JSON.generate({'kbps' => @@douban_fm.kbps})
+              end
             when 'index', nil
               html_path = File.expand_path('../../index.html', __FILE__)
               response.body = File.readlines(html_path).join('')
