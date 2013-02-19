@@ -56,6 +56,11 @@ class DoubanFMCLI
         options.list = true
       end
 
+      opts.on('-f', '--favor [count]', 'list favorites songs') do |count|
+        options.favor = true
+        options.liked = count.to_i
+      end
+
       opts.on('-i', '--interaction [port]',
               'start an http server for interaction',
               'if omit port, 3000 will be used by default',
@@ -133,6 +138,15 @@ class DoubanFMCLI
       @douban_fm.login
 
       logger.log("login as user [#{options.email}]")
+    end
+
+    if options.favor
+      @douban_fm.fetch_liked_songs(options.liked)
+      @douban_fm.liked_songs['songs'].each_with_index do |song, index|
+        puts "#{index}#{' '*(4 - index.to_s.length)}#{song['title']} - #{song['artist']}"
+      end
+
+      exit
     end
 
     @douban_fm.select_channel(options.channel)
