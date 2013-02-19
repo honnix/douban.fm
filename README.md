@@ -36,6 +36,7 @@ Usage: douban.fm [OPTIONS]
                                      if not provided, 64kbps will be used as default
                                      for non-pro user this option simply does not work
     -l, --list                       list all available channels
+    -f, --favor [count]              list favorites songs
     -i, --interaction [port]         start an http server for interaction
                                      if omit port, 3000 will be used by default
                                      GET /channels to get all available channels
