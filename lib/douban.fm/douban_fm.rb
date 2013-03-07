@@ -23,7 +23,7 @@ module DoubanFM
 
     def login
       uri = URI('http://www.douban.com/j/app/login')
-      res = Net::HTTP.post_form(uri,
+      res = get_http_client().post_form(uri,
                                 'email' => @email,
                                 'password' => @password,
                                 'app_name' => 'radio_desktop_mac',
@@ -38,7 +38,7 @@ module DoubanFM
       today = Date.new
       if today != @last_fetching_channels_date
         uri = URI('http://www.douban.com/j/app/radio/channels')
-        res = Net::HTTP.get(uri)
+        res = get_http_client().get(uri)
         @channels = JSON.parse(res)
 
         @last_fetching_channels_date = today
@@ -61,7 +61,7 @@ module DoubanFM
           :exclude => ''
       }
       uri.query = URI.encode_www_form(params)
-      res = Net::HTTP.get_response(uri)
+      res = get_http_client().get_response(uri)
       @liked_songs = JSON.parse(res.body)
       @logger.log("liked songs #{@liked_songs}")
 
@@ -102,7 +102,7 @@ module DoubanFM
       }
       @logger.log(params)
       uri.query = URI.encode_www_form(params)
-      res = Net::HTTP.get_response(uri)
+      res = get_http_client().get_response(uri)
 
       @current_playlist = JSON.parse(res.body)
 
@@ -251,6 +251,15 @@ module DoubanFM
     end
 
     private
+    def get_http_client
+      proxy = ENV['HTTP_PROXY'] || ENV['HTTPS_PROXY']
+      unless proxy.nil?
+        m = proxy.match(/(http(s)?:\/\/)?(?<proxy_addr>.*):(?<proxy_port>[0-9]*)/)
+        Net::HTTP::Proxy(m['proxy_addr'], m['proxy_port'])
+      else
+        Net::HTTP
+      end
+    end
 
     def add_current_playlist_to_mpd(mpd)
       @logger.log("add more songs to mpd")
