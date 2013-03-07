@@ -255,9 +255,9 @@ module DoubanFM
       proxy = ENV['HTTP_PROXY'] || ENV['HTTPS_PROXY']
       unless proxy.nil?
         m = proxy.match(/(http(s)?:\/\/)?(?<proxy_addr>.*):(?<proxy_port>[0-9]*)/)
-        get_http_client()::Proxy(m['proxy_addr'], m['proxy_port'])
+        Net::HTTP::Proxy(m['proxy_addr'], m['proxy_port'])
       else
-        get_http_client()
+        Net::HTTP
       end
     end
 
