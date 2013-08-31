@@ -1,3 +1,3 @@
 module DoubanFM
-  VERSION = '0.4.4'
+  VERSION = '0.4.5'
 end
