@@ -235,7 +235,10 @@ class DoubanFMCLI
               end
             when 'index', nil
               html_path = File.expand_path('../../index.html', __FILE__)
-              response.body = File.readlines(html_path).join('')
+              response.body = File.open(html_path) { |f| f.read }
+            when 'static'
+              html_path = File.expand_path("../../#{request.path[1..-1]}", __FILE__)
+              response.body = File.open(html_path) { |f| f.read }
             else
               raise WEBrick::HTTPStatus::NotFound
             end
