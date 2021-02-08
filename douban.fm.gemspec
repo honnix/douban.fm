@@ -17,5 +17,5 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_dependency 'ruby-mpd', '0.1.5'
-  gem.add_dependency 'highline', '1.6.15'
+  gem.add_dependency 'highline', '2.0.3'
 end
